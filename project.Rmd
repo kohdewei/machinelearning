@@ -1,0 +1,78 @@
+# Machine Learning Course Project
+
+This project uses the data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants in the [Weight Lifting Exercise Dataset](http://groupware.les.inf.puc-rio.br/har) to predict whether a barbell lift is being performed correctly.
+
+## Data Cleansing
+
+We first download the [Training Data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv) and [Test Data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv) and read them into R.
+
+```{r}
+trainPml <- read.csv("pml-training.csv", na.strings=c("NA",""))
+testPml <- read.csv("pml-testing.csv", na.strings=c("NA",""))
+```
+
+Checking the datasets for NA values revealed a large number of variables where almost all values are missing.  These variables are removed since they are unlikely to add any value to the prediction model.
+
+```{r}
+table(colSums(is.na(trainPml)))
+table(colSums(is.na(testPml)))
+missingVar <- colSums(is.na(trainPml))==19216
+trainPml <- trainPml[!missingVar]
+testPml <- testPml[!missingVar]
+```
+
+Similarly, the first 7 columns also appear to be contain non-predictive information, and they are thus removed from the training and test sets.
+
+```{r}
+str(trainPml[1:7])
+trainPml <- trainPml[-c(1:7)]
+testPml <- testPml[-c(1:7)]
+```
+
+## Model building
+
+```{r}
+library(caret)
+library(randomForest)
+```
+
+The training data is further partitioned into training and test sets for the purpose of model building.
+
+```{r}
+set.seed(12345)
+inTrain <- createDataPartition(y=trainPml$classe, p=0.6, list=FALSE)
+training <- trainPml[inTrain,]
+testing <- trainPml[-inTrain,]
+```
+
+The Random Forest technique is used to build a simple predictive model.
+
+```{r}
+model <- randomForest(classe~., data=training)
+```
+
+We compute the out of sample error on the test set as follows.
+
+```{r}
+confusionMatrix(predict(model, testing), testing$classe)
+```
+
+The expected out of sample error is thus `0.7%`.
+
+## Predictions
+
+We make predictions for the test set and write the predictions to individual text files as required.
+
+```{r}
+answers <- as.character(predict(model, testPml))
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(answers)
+```
+
+The model obtains a prediction of 20/20 when submitted to Coursera.
