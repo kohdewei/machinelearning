@@ -1,34 +1,3 @@
-summary(ToothGrowth)
-ToothGrowth[ToothGrowth$dose==0.5]
-ToothGrowth[ToothGrowth$dose==0.5,]
-length(ToothGrowth[ToothGrowth$dose==0.5,])
-length(ToothGrowth[ToothGrowth$dose==1.0,])
-dim(ToothGrowth[ToothGrowth$dose==1.0,])
-dim(ToothGrowth[ToothGrowth$dose==2.0,])
-dim(ToothGrowth[ToothGrowth$dose==0.5,])
-```{r}#
-ggplot(aes(x=supp, y=len), data=ToothGrowth) +#
-  geom_boxplot(aes(fill=supp))#
-```
-library(datasets)
-```{r}#
-ggplot(aes(x=supp, y=len), data=ToothGrowth) +#
-  geom_boxplot(aes(fill=supp))#
-```
-```{r}#
-ggplot(aes(x=supp, y=len), data=ToothGrowth) +#
-  geom_boxplot(aes(fill=supp))
-```{r}#
-ggplot(aes(x=as.factor(dose), y=len), data=ToothGrowth) +#
-  geom_boxplot(aes(fill=as.factor(dose)))
-with(ToothGrowth, tapply(len, list(supp,dose), mean))
-ggplot(aes(x=as.factor(dose), y=len), data=ToothGrowth) + #
-  geom_boxplot(aes(fill=as.factor(dose))) + #
-  facet_wrap(~supp)
-ggplot(aes(x=as.factor(dose), y=len), data=ToothGrowth) + #
-  geom_boxplot(aes(fill=as.factor(dose))) + #
-  facet_wrap(~supp) +
-xlab("dose")
 ?qt
 s<-30
 n<-9
@@ -518,37 +487,52 @@ training <- trainPml[inTrain,]#
 testing <- trainPml[-inTrain,]#
 set.seed(12345)#
 #
-# model building
-library(caret)#
-trainPml <- read.csv("pml-training.csv")#
-testPml <- read.csv("pml-testing.csv")#
-#
-# data cleansing#
+trainInd <- sample(nrow(training), 3000)#
+training2 <- training[trainInd,]
+fitControl <- trainControl(method="cv", number=4)#
+modelFit <- train(classe~., data=training2, method="rf", prox=TRUE, trControl=fitControl)
+?randomForest
+modelFit <- randomForest(classe~., data=training2)
+dim(training2)
+str(training2)
+trainPml <- read.csv("pml-training.csv", na.strings=c("NA",""))#
+testPml <- read.csv("pml-testing.csv", na.strings=c("NA",""))
+colSums(is.na(trainPml))
 missingVar <- colSums(is.na(trainPml))==19216#
 trainPml <- trainPml[!missingVar]#
 testPml <- testPml[!missingVar]#
 trainPml <- trainPml[-c(1:7)]#
-testPml <- testPml[-c(1:7)]#
-#
-# data partitioning#
+testPml <- testPml[-c(1:7)]
 inTrain <- createDataPartition(y=trainPml$classe, p=0.6, list=FALSE)#
 training <- trainPml[inTrain,]#
 testing <- trainPml[-inTrain,]#
-set.seed(12345)#
-#
-# model building
-?traincontrol
-?trainControl
-?trainControl
-?train
-head(training$classe)
+set.seed(12345)
 dim(training)
-training2 <- head(training,1000)
-dim(training2)
-fitControl <- trainControl(method="cv", number=4)#
-modelFit <- train(classe~., data=training2, method="rf", prox=TRUE, trControl=fitControl)
-warnings()
 trainInd <- sample(nrow(training), 3000)#
 training2 <- training[trainInd,]
+names(training)
+modelFit <- randomForest(classe~., data=training2)
+modelFit
+confusionMatrix(predict(modelFit, testing), testing$classe)
 fitControl <- trainControl(method="cv", number=4)#
 modelFit <- train(classe~., data=training, method="rf", prox=TRUE, trControl=fitControl)
+modelFit
+modelFit <- randomForest(classe~., data=training2)
+confusionMatrix(predict(modelFit, testing), testing$classe)
+modelFit <- randomForest(classe~., data=training)
+confusionMatrix(predict(modelFit, testing), testing$classe)
+answers <- as.character(predict(model, testing))
+answers <- as.character(predict(modelFit, testing))
+answers
+answers <- as.character(predict(modelFit, testPml))
+testPml
+answers
+pml_write_files = function(x){#
+  n = length(x)#
+  for(i in 1:n){#
+    filename = paste0("problem_id_",i,".txt")#
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)#
+  }#
+}
+pml_write_files()
+pml_write_files(answers)
